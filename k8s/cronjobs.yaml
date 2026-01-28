@@ -1,0 +1,122 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: amber-nightly-scan
+  namespace: ambient-code
+  labels:
+    app: amber-langgraph
+    schedule: nightly
+spec:
+  schedule: "0 2 * * *"  # 2 AM daily
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: amber-langgraph
+            job: nightly-scan
+        spec:
+          serviceAccountName: amber-langgraph
+          restartPolicy: OnFailure
+          containers:
+          - name: trigger
+            image: curlimages/curl:latest
+            command:
+            - sh
+            - -c
+            - |
+              DATE=$(date +%Y%m%d)
+              curl -X POST http://amber-langgraph:8000/invoke-async \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"mode\": \"scheduled\",
+                  \"trigger\": {\"schedule_type\": \"nightly\"},
+                  \"session_id\": \"nightly-${DATE}\",
+                  \"project_name\": \"platform\",
+                  \"repositories\": [\"https://github.com/ambient-code/platform\"]
+                }"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: amber-weekly-sprint
+  namespace: ambient-code
+  labels:
+    app: amber-langgraph
+    schedule: weekly
+spec:
+  schedule: "0 9 * * 1"  # 9 AM every Monday
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: amber-langgraph
+            job: weekly-sprint
+        spec:
+          serviceAccountName: amber-langgraph
+          restartPolicy: OnFailure
+          containers:
+          - name: trigger
+            image: curlimages/curl:latest
+            command:
+            - sh
+            - -c
+            - |
+              DATE=$(date +%Y%m%d)
+              curl -X POST http://amber-langgraph:8000/invoke-async \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"mode\": \"scheduled\",
+                  \"trigger\": {\"schedule_type\": \"weekly\"},
+                  \"session_id\": \"weekly-${DATE}\",
+                  \"project_name\": \"platform\",
+                  \"repositories\": [\"https://github.com/ambient-code/platform\"]
+                }"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: amber-monthly-review
+  namespace: ambient-code
+  labels:
+    app: amber-langgraph
+    schedule: monthly
+spec:
+  schedule: "0 9 1 * *"  # 9 AM on 1st of month
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: amber-langgraph
+            job: monthly-review
+        spec:
+          serviceAccountName: amber-langgraph
+          restartPolicy: OnFailure
+          containers:
+          - name: trigger
+            image: curlimages/curl:latest
+            command:
+            - sh
+            - -c
+            - |
+              DATE=$(date +%Y%m%d)
+              curl -X POST http://amber-langgraph:8000/invoke-async \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"mode\": \"scheduled\",
+                  \"trigger\": {\"schedule_type\": \"monthly\"},
+                  \"session_id\": \"monthly-${DATE}\",
+                  \"project_name\": \"platform\",
+                  \"repositories\": [\"https://github.com/ambient-code/platform\"]
+                }"
