@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/opt/homebrew/opt/postgresql@17/bin/psql:*)",
+      "Bash(/opt/homebrew/opt/postgresql@17/bin/createdb:*)",
+      "Bash(xargs kill:*)",
+      "mcp__deepwiki__read_wiki_structure",
+      "mcp__deepwiki__ask_question",
+      "WebFetch(domain:docs.github.com)",
+      "Bash(black:*)",
+      "Bash(isort:*)",
+      "Bash(./scripts/update-repomap.sh:*)",
+      "Bash(mypy:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "tessl"
+  ]
+}

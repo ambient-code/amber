@@ -1,7 +1,7 @@
 [project]
-name = "amber-langgraph"
+name = "amber"
 version = "0.1.0"
-description = "Amber AI Agent reimplemented with LangGraph"
+description = "Amber - CodeBase Agent for Ambient Code projects"
 authors = [{name = "Jeremy Eder", email = "jeremyeder@gmail.com"}]
 readme = "README.md"
 requires-python = ">=3.11"
@@ -33,9 +33,12 @@ dev = [
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=6.0.0",
     "black>=24.10.0",
+    "isort>=5.13.0",
     "ruff>=0.8.0",
     "mypy>=1.13.0",
     "types-pyyaml>=6.0.12",
+    "bandit>=1.7.0",
+    "safety>=3.0.0",
 ]
 
 [build-system]
@@ -43,15 +46,20 @@ requires = ["setuptools>=75.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
-line-length = 100
+line-length = 999
 target-version = ["py311"]
 
+[tool.isort]
+profile = "black"
+line_length = 999
+
 [tool.ruff]
-line-length = 100
+line-length = 320
 target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]  # Ignore line length
 
 [tool.mypy]
 python_version = "3.11"
