@@ -1,10 +1,9 @@
 """Webhook-triggered reactive workflow"""
 
 from langgraph.graph import END, StateGraph
-from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from amber.config import get_settings
+from amber.llm import get_llm
 from amber.models import AmberState
 from amber.tools import ALL_TOOLS
 
@@ -50,12 +49,7 @@ def parse_event_node(state: AmberState) -> AmberState:
 
 def triage_issue_node(state: AmberState) -> AmberState:
     """Triage new issue with labels and severity"""
-    settings = get_settings()
-    llm_with_tools = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=2000,
-    ).bind_tools(ALL_TOOLS)
+    llm_with_tools = get_llm(max_tokens=2000).bind_tools(ALL_TOOLS)
 
     parsed = state["trigger"]["parsed_event"]
 
@@ -86,12 +80,7 @@ Check if this is auto-fixable for amber:auto-fix label."""
 
 def review_pr_node(state: AmberState) -> AmberState:
     """Quick PR review for standards compliance"""
-    settings = get_settings()
-    llm_with_tools = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=4000,
-    ).bind_tools(ALL_TOOLS)
+    llm_with_tools = get_llm(max_tokens=4000).bind_tools(ALL_TOOLS)
 
     parsed = state["trigger"]["parsed_event"]
 
@@ -127,12 +116,7 @@ If CI is already flagging the same issues, skip commenting."""
 
 def update_changelog_node(state: AmberState) -> AmberState:
     """Update changelog for push to main"""
-    settings = get_settings()
-    llm_with_tools = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=2000,
-    ).bind_tools(ALL_TOOLS)
+    llm_with_tools = get_llm(max_tokens=2000).bind_tools(ALL_TOOLS)
 
     messages = state["messages"]
     messages.append(
@@ -157,12 +141,7 @@ Otherwise, just update metrics."""
 
 def post_comment_node(state: AmberState) -> AmberState:
     """Post comment to GitHub"""
-    settings = get_settings()
-    llm_with_tools = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=1000,
-    ).bind_tools(ALL_TOOLS)
+    llm_with_tools = get_llm(max_tokens=1000).bind_tools(ALL_TOOLS)
 
     parsed = state["trigger"]["parsed_event"]
     event_type = state["trigger"]["event_type"]

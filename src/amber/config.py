@@ -11,9 +11,12 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # API Configuration
-    anthropic_api_key: str
     github_token: str
     postgres_url: str
+
+    # Vertex AI Configuration (Anthropic via Model Garden)
+    gcp_project_id: str
+    gcp_region: str = "us-east5"
 
     # LLM Configuration
     llm_model: str = "claude-sonnet-4-5-20250929"

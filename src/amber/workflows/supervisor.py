@@ -3,7 +3,6 @@
 from typing import Any
 
 from langgraph.graph import END, StateGraph
-from langchain_anthropic import ChatAnthropic
 
 from amber.config import get_settings
 from amber.models import AmberState, OperatingMode

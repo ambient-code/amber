@@ -2,10 +2,9 @@
 
 from datetime import datetime
 from langgraph.graph import END, StateGraph
-from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from amber.config import get_settings
+from amber.llm import get_llm
 from amber.models import AmberState
 from amber.tools import ALL_TOOLS
 
@@ -35,12 +34,7 @@ def determine_report_type_node(state: AmberState) -> AmberState:
 
 def scan_dependencies_node(state: AmberState) -> AmberState:
     """Scan upstream dependencies for breaking changes"""
-    settings = get_settings()
-    llm_with_tools = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=4000,
-    ).bind_tools(ALL_TOOLS)
+    llm_with_tools = get_llm(max_tokens=4000).bind_tools(ALL_TOOLS)
 
     messages = state["messages"]
     messages.append(
@@ -68,12 +62,7 @@ Use grep_codebase and read_file tools to analyze go.mod, package.json, requireme
 
 def check_security_node(state: AmberState) -> AmberState:
     """Check for security issues"""
-    settings = get_settings()
-    llm_with_tools = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=4000,
-    ).bind_tools(ALL_TOOLS)
+    llm_with_tools = get_llm(max_tokens=4000).bind_tools(ALL_TOOLS)
 
     messages = state["messages"]
     messages.append(
@@ -100,12 +89,7 @@ Use constitution checking tools and code analysis."""
 
 def analyze_issues_node(state: AmberState) -> AmberState:
     """Analyze issue backlog for sprint planning"""
-    settings = get_settings()
-    llm_with_tools = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=4000,
-    ).bind_tools(ALL_TOOLS)
+    llm_with_tools = get_llm(max_tokens=4000).bind_tools(ALL_TOOLS)
 
     messages = state["messages"]
     messages.append(
@@ -133,12 +117,7 @@ Generate insights for sprint planning."""
 
 def generate_report_node(state: AmberState) -> AmberState:
     """Generate markdown report"""
-    settings = get_settings()
-    llm = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=4000,
-    )
+    llm = get_llm(max_tokens=4000)
 
     schedule_type = state["trigger"]["schedule_type"]
     report_date = datetime.now().strftime("%Y-%m-%d")
@@ -202,12 +181,7 @@ def commit_report_node(state: AmberState) -> AmberState:
 
 def create_report_pr_node(state: AmberState) -> AmberState:
     """Create PR with report"""
-    settings = get_settings()
-    llm_with_tools = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=2000,
-    ).bind_tools(ALL_TOOLS)
+    llm_with_tools = get_llm(max_tokens=2000).bind_tools(ALL_TOOLS)
 
     schedule_type = state["trigger"]["schedule_type"]
     report_date = state["plan"]["report_date"]
