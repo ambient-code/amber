@@ -2,10 +2,9 @@
 
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
-from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
-from amber.config import get_settings
+from amber.llm import get_llm
 from amber.models import AmberState
 from amber.tools import ALL_TOOLS
 
@@ -37,15 +36,8 @@ Always reference the ACP Constitution when making recommendations."""
 
 def agent_node(state: AmberState) -> AmberState:
     """Main agent node that processes messages and decides on actions"""
-    settings = get_settings()
-
     # Create LLM with tools
-    llm = ChatAnthropic(
-        api_key=settings.anthropic_api_key,
-        model=settings.llm_model,
-        temperature=settings.llm_temperature,
-        max_tokens=4000,
-    ).bind_tools(ALL_TOOLS)
+    llm = get_llm(max_tokens=4000).bind_tools(ALL_TOOLS)
 
     messages = state.get("messages", [])
 

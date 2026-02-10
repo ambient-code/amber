@@ -1,22 +1,26 @@
 """FastAPI service for Amber LangGraph agent"""
 
-import asyncio
-import logging
 from contextlib import asynccontextmanager
 from typing import Any
 
 import structlog
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from amber.config import get_settings
 from amber.models import AmberState
+from amber.routes import history as history_routes
+from amber.routes import stream as stream_routes
+from amber.routes import threads as threads_routes
 from amber.workflows import compile_supervisor_graph
+from amber.workflows.chat import create_chat_workflow
 
 # Optional PostgreSQL checkpointer
 try:
     from langgraph.checkpoint.postgres import PostgresSaver
+
     CHECKPOINTER_AVAILABLE = True
 except ImportError:
     PostgresSaver = None
@@ -73,6 +77,11 @@ async def lifespan(app: FastAPI):
     supervisor_graph = compile_supervisor_graph(checkpointer=checkpointer)
     logger.info("Supervisor graph compiled", checkpointing_enabled=checkpointer is not None)
 
+    # Compile chat workflow for streaming endpoints
+    stream_routes.chat_graph = create_chat_workflow(checkpointer=checkpointer)
+    history_routes.checkpointer = checkpointer
+    logger.info("Chat workflow compiled for streaming", checkpointing_enabled=checkpointer is not None)
+
     yield
 
     logger.info("Shutting down Amber LangGraph service")
@@ -85,6 +94,20 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Register streaming chat routers
+app.include_router(stream_routes.router)
+app.include_router(history_routes.router)
+app.include_router(threads_routes.router)
 
 
 # Request/Response models
@@ -119,9 +142,7 @@ class HealthResponse(BaseModel):
 @app.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
     """Health check endpoint"""
-    return HealthResponse(
-        status="healthy", version="0.1.0", checkpointer_enabled=checkpointer is not None
-    )
+    return HealthResponse(status="healthy", version="0.1.0", checkpointer_enabled=checkpointer is not None)
 
 
 @app.get("/")
@@ -135,6 +156,9 @@ async def root():
             "invoke": "/invoke",
             "invoke_async": "/invoke-async",
             "webhook": "/webhook/{event_type}",
+            "stream": "/v1/stream",
+            "history": "/v1/history/{thread_id}",
+            "threads": "/v1/threads/{user_id}",
         },
     }
 
@@ -219,9 +243,7 @@ async def invoke_amber(request: AmberRequest) -> AmberResponse:
         )
 
     except Exception as e:
-        logger.error(
-            "Amber execution failed", session_id=request.session_id, error=str(e), exc_info=True
-        )
+        logger.error("Amber execution failed", session_id=request.session_id, error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail=f"Execution failed: {str(e)}")
 
 
@@ -293,9 +315,7 @@ async def run_amber_workflow(request: AmberRequest) -> None:
 
 
 @app.post("/invoke-async")
-async def invoke_amber_async(
-    request: AmberRequest, background_tasks: BackgroundTasks
-) -> JSONResponse:
+async def invoke_amber_async(request: AmberRequest, background_tasks: BackgroundTasks) -> JSONResponse:
     """Asynchronous invocation for background/scheduled modes"""
     logger.info(
         "Invoking Amber asynchronously",
@@ -315,9 +335,7 @@ async def invoke_amber_async(
 
 
 @app.post("/webhook/{event_type}")
-async def github_webhook(
-    event_type: str, payload: dict[str, Any], background_tasks: BackgroundTasks
-) -> JSONResponse:
+async def github_webhook(event_type: str, payload: dict[str, Any], background_tasks: BackgroundTasks) -> JSONResponse:
     """GitHub webhook receiver"""
     logger.info("Received GitHub webhook", event_type=event_type)
 

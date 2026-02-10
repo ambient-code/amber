@@ -1,10 +1,10 @@
 """Background agent workflow for autonomous maintenance"""
 
 from langgraph.graph import END, StateGraph
-from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from amber.config import get_settings
+from amber.llm import get_llm
 from amber.models import AmberState, RiskAssessment
 from amber.tools import ALL_TOOLS
 
@@ -30,12 +30,7 @@ def fetch_work_queue_node(state: AmberState) -> AmberState:
     trigger = state.get("trigger", {})
     repo_name = trigger.get("repo_name", "ambient-code/platform")
 
-    settings = get_settings()
-    llm_with_tools = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=2000,
-    ).bind_tools(ALL_TOOLS)
+    llm_with_tools = get_llm(max_tokens=2000).bind_tools(ALL_TOOLS)
 
     # Fetch open issues with specific labels
     messages = [
@@ -55,12 +50,7 @@ Return the list of issues."""
 
 def prioritize_node(state: AmberState) -> AmberState:
     """Prioritize issues by severity and effort"""
-    settings = get_settings()
-    llm = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=2000,
-    )
+    llm = get_llm(max_tokens=2000)
 
     messages = state["messages"]
     messages.append(
@@ -83,12 +73,7 @@ Select the highest priority issue to work on."""
 
 def assess_auto_fix_node(state: AmberState) -> AmberState:
     """Determine if issue is auto-fixable with high confidence"""
-    settings = get_settings()
-    llm_with_tools = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=4000,
-    ).bind_tools(ALL_TOOLS)
+    llm_with_tools = get_llm(max_tokens=4000).bind_tools(ALL_TOOLS)
 
     messages = state["messages"]
     messages.append(
@@ -142,12 +127,7 @@ def route_by_confidence(state: AmberState) -> str:
 
 def create_plan_node(state: AmberState) -> AmberState:
     """Create implementation plan"""
-    settings = get_settings()
-    llm = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=2000,
-    )
+    llm = get_llm(max_tokens=2000)
 
     messages = state["messages"]
     messages.append(
@@ -199,12 +179,7 @@ def run_tests_node(state: AmberState) -> AmberState:
 
 def create_pr_node(state: AmberState) -> AmberState:
     """Create pull request"""
-    settings = get_settings()
-    llm_with_tools = ChatAnthropic(
-        model=settings.llm_model,
-        temperature=0.0,
-        max_tokens=2000,
-    ).bind_tools(ALL_TOOLS)
+    llm_with_tools = get_llm(max_tokens=2000).bind_tools(ALL_TOOLS)
 
     messages = state["messages"]
     messages.append(
